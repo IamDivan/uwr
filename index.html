@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Umineko Waiting Room</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
+
+        body {
+            user-select: none; /* Prevent text selection */
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            background-color: #111;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-y: auto;
+            position: relative;
+			margin-bottom: 50px
+        }
+
+        #clearButton {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1;
+            padding: 10px 20px;
+            font-size: 20px;
+            font-family: 'Roboto', sans-serif;
+            color: red;
+            background: transparent;
+            border: 2px solid red;
+            border-radius: 5px;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        #clearButton:hover {
+            background: rgba(255, 0, 0, 0.1);
+            color: darkred;
+        }
+
+        #copyButton {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1;
+            padding: 10px 20px;
+            font-size: 20px;
+            font-family: 'Roboto', sans-serif;
+            color: white;
+            background: transparent;
+            border: 2px solid gold;
+            border-radius: 5px;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        #copyButton:hover {
+            background: rgba(255, 215, 0, 0.2);
+            color: gold;
+        }
+
+        #days-since-last-event {
+            font-family: 'Times New Roman', serif;
+            color: white;
+            font-size: 1.5em;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        #current-date {
+            font-family: 'Georgia Bold', serif;
+            color: white;
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-top: 7px;
+            text-align: center;
+        }
+
+        .rain {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .drop {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.6);
+            width: 2px;
+            height: 10px;
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(100vh);
+            }
+        }
+
+        .header {
+            font-family: 'Great Vibes', cursive;
+            font-size: 4em;
+            color: gold;
+            text-align: center;
+            margin: 20px 0;
+            z-index: 1;
+        }
+
+        .calendar {
+			display: grid;
+			grid-template-columns: repeat(7, 1fr);
+			gap: 20px;
+			margin: 20px auto; /* Center the calendar */
+			padding: 0 20px; /* Add horizontal padding */
+			max-width: auto*0.9; /* Set a maximum width */
+			z-index: 1;
+		}
+
+        .day {
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            background-color: white;
+            color: black;
+            position: relative;
+            height: 150px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s;
+            z-index: 1;
+        }
+
+        .day:hover {
+            transform: scale(1.05);
+            z-index: 2;
+        }
+
+        .day-header {
+			font-weight: bold;
+			margin-bottom: 5px;
+			padding: 10px;
+			border-radius: 5px;
+			font-size: 1.5em;
+			background-color: #FF5722; /* Change as needed */
+			color: black; /* Default to black */
+		}
+
+        .day-header .date {
+            font-size: 0.75em;
+            display: block;
+        }
+
+        .category {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-top: 10px;
+            color: #333;
+        }
+
+        .past-day {
+            background-color: #d0d0d0;
+            color: #555;
+        }
+
+        .countdown {
+            font-size: 3em;
+            text-align: center;
+            margin: 20px 0;
+            color: gold;
+        }
+
+        .loading-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+
+        .loading-wheel {
+            width: 140vw;
+            height: 140vw;
+            max-width: 600px;
+            max-height: 600px;
+            margin-bottom: 10px;
+            z-index: 1;
+        }
+
+        .loading-wheel svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .loading-wheel text {
+            font-family: 'Great Vibes', cursive;
+            fill: gold;
+            text-anchor: middle;
+            dominant-baseline: middle;
+        }
+
+        .percentage {
+            text-align: center;
+            font-size: 2em;
+            color: gold;
+            margin-bottom: 5px;
+        }
+
+        .last-event {
+            font-family: 'Microsoft JhengHei Light', cursive;
+            margin-top: 10px;
+            font-size: 1.5em;
+            color: gold;
+            text-align: center;
+            z-index: 1;
+            margin-bottom: 10px;
+        }
+
+        .button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: gold;
+            border: none;
+            color: black;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 20px 0;
+            z-index: 1;
+        }
+
+        .button.off {
+            background-color: grey;
+            color: white;
+        }
+
+        .button:hover {
+            background-color: #ffd700;
+        }
+
+        @keyframes flutter-left {
+            0% { transform: rotate3d(0, 1, 0, 20deg); }
+            50% { transform: rotate3d(0, 1, 0, 70deg); }
+            100% { transform: rotate3d(0, 1, 0, 20deg); }
+        }
+
+        @keyframes flutter-right {
+            0% { transform: rotate3d(0, 1, 0, -20deg); }
+            50% { transform: rotate3d(0, 1, 0, -70deg); }
+            100% { transform: rotate3d(0, 1, 0, -20deg); }
+        }
+
+        .butterfly {
+            width: 100px;
+            height: 100px;
+            position: absolute;
+            top: 0; bottom: 0; left: 0; right: 0;
+            transform-style: preserve-3d;
+            transform: rotate3d(1, 0.5, 0, 110deg);
+            cursor: grab;
+        }
+
+        .left-wing, .right-wing {
+            width: 24px;
+            height: 42px;
+            position: absolute;
+            top: 10px;  
+        }
+
+        .left-wing {
+            left: 10px;
+            transform-origin: 24px 50%;
+            animation: flutter-left 0.3s infinite;
+        }
+
+        .right-wing {
+            left: 34px;
+            transform-origin: 0px 50%;
+            animation: flutter-right 0.3s infinite;
+        }
+
+        .top, .bottom {
+            background: gold; /* Default color */
+            opacity: 0.7;
+            position: absolute;
+        }
+
+        .top {
+            width: 20px;
+            height: 20px;
+            border-radius: 10px;
+        }
+
+        .bottom {
+            top: 18px;
+            width: 24px;
+            height: 24px;
+            border-radius: 12px;
+        }
+
+        .tooltip {
+            position: absolute;
+            background-color: #333;
+            color: white;
+            border-radius: 5px;
+            padding: 10px;
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0s, opacity 0.5s linear;
+            z-index: 100;
+        }
+
+        .day:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        #current-date-jp {
+            font-family: 'Microsoft JhengHei Light', sans-serif;
+            color: white;
+            font-size: 1.75em;
+            margin-top: 6px;
+            margin-bottom: 50px;
+            text-align: center;
+        }
+
+        #current-utc-time {
+            font-family: 'Microsoft JhengHei Light', sans-serif;
+            color: white;
+            font-size: 1.75em; /* Same size as Japanese date */
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        /* Style for the color slider */
+        #colorSlider {
+            position: absolute;
+            top: 69px;
+            left: 180px;
+            margin: 10px 0; /* Margin for spacing */
+        }
+
+        /* Style for the reset button */
+        #resetColorButton {
+            position: absolute;
+            top: 60px;
+            left: 10px;
+            padding: 12px 24px;
+            font-size: 18px;
+            font-family: 'Roboto', sans-serif;
+            color: white;
+            background: transparent;
+            border: 2px solid #FFD700; /* Transparent background */
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.3s, filter 0.3s;
+            margin-top: 10px;
+        }
+
+        #resetColorButton:hover {
+            filter: brightness(1.1);
+        }
+
+        /* Style for the rainbow button */
+        #rainbowButton {
+            position: absolute;
+            top: 120px;
+            left: 10px;
+            padding: 12px 24px;
+            font-size: 18px;
+            font-family: 'Roboto', sans-serif;
+            color: white;
+            background: transparent;
+            border: 2px solid #FF007F; /* Transparent background */
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.3s, filter 0.3s;
+            margin-top: 10px;
+        }
+
+        #rainbowButton:hover {
+            filter: brightness(1.1);
+        }
+
+        canvas {
+            margin-bottom: 0px;
+            background: transparent;
+            display: block;
+            margin-bottom: 40px;
+        }
+		#bellButton {
+			position: absolute;
+			top: 290px; 
+			left: 10px;
+			padding: 12px 24px;
+			font-size: 18px;
+			font-family: 'Roboto', sans-serif;
+			color: white;
+			background: transparent;
+			border: 2px solid green; /* Border color */
+			border-radius: 10px;
+			cursor: pointer;
+			transition: transform 0.2s, box-shadow 0.3s, filter 0.3s;
+			margin-top: 10px;
+		}
+
+		#bellButton:hover {
+			filter: brightness(1.1);
+			background: rgba(255, 0, 127, 0.2); 
+		}
+		
+		#cube {
+            width: 100px;
+            height: 100px;
+            position: fixed;
+            bottom: 50px;
+            right: 50px;
+            transform-style: preserve-3d;
+            animation: rotate 5s infinite linear;
+			opacity: 0;  
+			z-index: 0;
+            /* transition: opacity 0.5s;  */ 
+        }
+		#cube.visible {
+            opacity: 1;
+        }
+
+        #cube div {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background-image: url('https://raw.githubusercontent.com/IamDivan/Umineko-Waiting-Room/main/Logos/Terumasa_Nanjo2.webp');
+            background-size: cover;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        #cube .front  { transform: translateZ(50px); }
+        #cube .back   { transform: rotateY(180deg) translateZ(50px); }
+        #cube .right  { transform: rotateY(90deg) translateZ(50px); }
+        #cube .left   { transform: rotateY(-90deg) translateZ(50px); }
+        #cube .top    { transform: rotateX(90deg) translateZ(50px); }
+        #cube .bottom { transform: rotateX(-90deg) translateZ(33px); }
+
+        @keyframes rotate {
+            from { transform: rotateX(0) rotateY(0); }
+            to { transform: rotateX(360deg) rotateY(360deg); }
+        }
+		label {
+			display: block;
+			position: absolute;
+			top: 185px; 
+			left: 10px;
+		}
+
+		#maxButterfliesSlider {
+			position: absolute;
+			top: 220px; 
+			left: 10px;
+		}
+
+		#maxButterfliesInput {
+			position: absolute;
+			top: 245px; 
+			left: 10px; 
+		}		
+		
+		/* Style for the slider */
+		 /* Style for the slider */
+        #maxButterfliesSlider {
+            position: absolute;
+            top: 220px; 
+            left: 10px;
+            -webkit-appearance: none; /* Remove default styling */
+            width: 300px;
+            height: 10px;
+            border-radius: 5px;
+            background: linear-gradient(to right, #6a5acd, #ff69b4); /* Gradient background */
+            outline: none;
+            transition: background 0.3s ease;
+            box-shadow: 0 0 20px rgba(255, 105, 180, 0.5); /* Glow effect */
+        }
+
+        /* Style for the number input */
+        #maxButterfliesInput {
+            position: absolute;
+            top: 245px; 
+            left: 10px; 
+            width: 80px;
+            border: 2px solid #ff69b4; /* Border color */
+            border-radius: 5px; /* Rounded corners */
+            background: rgba(255, 255, 255, 0.2); /* Slightly transparent background */
+            color: white; /* Text color */
+            font-size: 1.2em; /* Font size */
+            padding: 5px; /* Padding */
+            box-shadow: 0 0 10px rgba(255, 105, 180, 0.5); /* Input glow */
+            transition: border 0.3s ease, box-shadow 0.3s ease; /* Transition for effects */
+        }
+		#maxButterfliesSlider::-webkit-slider-thumb {
+			-webkit-appearance: none; /* Remove default styling */
+			appearance: none;
+			width: 20px; /* Thumb width */
+			height: 20px; /* Thumb height */
+			border-radius: 50%; /* Circular thumb */
+			background: #ff69b4; /* Thumb color */
+			cursor: pointer;
+			box-shadow: 0 0 10px rgba(255, 105, 180, 0.8); /* Thumb glow */
+			transition: transform 0.2s ease;
+		}
+
+		#maxButterfliesSlider::-webkit-slider-thumb:hover {
+			transform: scale(1.2); /* Scale up on hover */
+		}
+
+		#maxButterfliesSlider::-moz-range-thumb {
+			width: 20px; /* Thumb width */
+			height: 20px; /* Thumb height */
+			border-radius: 50%; /* Circular thumb */
+			background: #ff69b4; /* Thumb color */
+			cursor: pointer;
+			box-shadow: 0 0 10px rgba(255, 105, 180, 0.8); /* Thumb glow */
+			transition: transform 0.2s ease;
+		}
+
+		#maxButterfliesSlider::-moz-range-thumb:hover {
+			transform: scale(1.2); /* Scale up on hover */
+		}
+		/* Style for the label */
+		#maxButterfliesValue {
+			font-family: 'Great Vibes', cursive; /* Use a decorative font */
+			font-size: 1.5em; /* Increase font size */
+			color: #ff69b4; /* Matching color */
+			text-shadow: 0 0 10px rgba(255, 105, 180, 0.7), 0 0 20px rgba(255, 20, 147, 0.5); /* Glow effect */
+			margin-left: 10px; /* Space between text and input */
+		}
+		#maxButterfliesInput:focus {
+			outline: none; /* Remove default outline */
+			border-color: #ff1493; /* Darker color on focus */
+			box-shadow: 0 0 15px rgba(255, 20, 147, 0.7); /* Glow effect on focus */
+		}
+		.image-container {
+			position: fixed; /* Fixed position */
+			right: 0; /* Align to the right */
+			top: 20%; /* Adjust vertical position as needed */
+			width: 100px; /* Set the width for smaller size */
+			opacity: 0.9; /* Slightly transparent */
+			transition: opacity 0.3s;
+		}
+
+		.image-container img {
+			width: 100%; /* Make the image responsive */
+			height: auto; /* Maintain aspect ratio */
+		}
+		#note {
+			font-family: 'Times New Roman', serif;
+            color: white;
+            font-size: 1.5em;
+            margin-top: 19px;
+            text-align: center;
+		}
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.34/moment-timezone-with-data.min.js"></script>
+</head>
+<body>
+	<button id="bellButton">Turn On the Bell</button>
+    <button id="clearButton">Magic isn't real lmao</button>
+    <button id="copyButton">Copy Countdown</button>
+    
+    <!-- Color slider for butterfly color -->
+    <input type="color" id="colorSlider" value="#FFD700"> <!-- Default gold color -->
+    <button id="resetColorButton">Reset to Gold</button> <!-- Reset button -->
+    <button id="rainbowButton">Turn On Rainbow Butterflies</button> <!-- Rainbow button -->
+	<label for="maxButterfliesSlider">Max Butterflies: <span id="maxButterfliesValue">350</span></label>
+    <input type="range" id="maxButterfliesSlider" min="1" max="1000" value="350">
+    <input type="number" id="maxButterfliesInput" min="-70000000000000000" max="700000000000000000" value="350" style="width: 80px; margin-left: 10px;">
+
+    <div class="rain" id="rain"></div>
+    <div class="header">Umineko Waiting Room</div>
+    <button class="button off" id="playButton">Turn On Rain Sounds</button>
+
+    <audio id="rainSound" loop>
+        <source src="https://www.soundjay.com/nature/sounds/rain-01.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <audio id="rainSoundCopy" loop>
+        <source src="https://www.soundjay.com/nature/sounds/rain-01.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
+    <div class="loading-wheel" id="loading-wheel">
+        <svg width="500" height="500">
+            <circle cx="300" cy="250" r="225" stroke="#ddd" stroke-width="10" fill="none" />
+            <circle id="progress-circle" cx="300" cy="250" r="225" stroke="#FF5722" stroke-width="10" fill="none" stroke-dasharray="1413" stroke-dashoffset="1413" />
+            <text id="countdown" x="300" y="220" fill="#FF5722" font-size="3em" text-anchor="middle" dominant-baseline="middle">Loading...</text>
+            <text id="percentage" x="300" y="290" fill="#FF5722" font-size="2em" text-anchor="middle" dominant-baseline="middle">0%</text>
+        </svg>
+    </div>
+    
+    <div id="days-since-last-event" class="last-event"></div>
+    <div id="current-date" class="last-event"></div>
+    <div id="current-date-jp" class="last-event"></div>
+    
+    <!-- Clock Implementation -->
+    <canvas id="clockCanvas" width="400" height="400"></canvas>
+    <div id="current-utc-time" class="last-event"></div>
+    <div class="last-event" id="last-event"></div>
+    <p id="note">The timetable broke itself at around 10:30 UTC so it's currently down for a few hours at least, sorry (I have no idea why yet lmao)</p>
+    <div class="calendar" id="timetable"></div>
+	<button id="cursorButton" style="display: none;">Nanjo</button>
+	<div id="cube">
+        <div class="front"></div>
+        <div class="back"></div>
+        <div class="right"></div>
+        <div class="left"></div>
+        <div class="top"></div>
+        <div class="bottom"></div>
+    </div>
+
+    <script>
+        // Clock Implementation
+        const loadImages = (srcs) => {
+            return Promise.all(srcs.map(src => {
+                return new Promise(resolve => {
+                    const img = new Image();
+                    img.src = src;
+                    img.onload = () => resolve(img);
+                });
+            }));
+        };
+        const drawClock = (bodyImg, hourImg, minuteImg, centerImg) => {
+            const now = moment.utc();
+            const currentHour = now.hours();
+            const currentMinute = now.minutes();
+
+            const hourAngle = (currentHour % 12) * 30 + (currentMinute / 60) * 30;
+            const minuteAngle = currentMinute * 6;
+
+            const canvas = document.getElementById('clockCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(bodyImg, 0, 0, canvas.width, canvas.height);
+
+            const hourScale = 0.5;
+            const minuteScale = 0.5;
+
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate((Math.PI / 180) * hourAngle);
+            ctx.drawImage(hourImg, -hourImg.width * hourScale / 2, -hourImg.height * hourScale / 2, hourImg.width * hourScale, hourImg.height * hourScale);
+            ctx.restore();
+
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate((Math.PI / 180) * minuteAngle);
+            ctx.drawImage(minuteImg, -minuteImg.width * minuteScale / 2, -minuteImg.height * minuteScale / 2, minuteImg.width * minuteScale, minuteImg.height * minuteScale);
+            ctx.restore();
+
+            const centerScale = 1 / 3; // Scale down to one third
+            ctx.drawImage(centerImg, 
+                (canvas.width - centerImg.width * centerScale) / 2, 
+                (canvas.height - centerImg.height * centerScale) / 2, 
+                centerImg.width * centerScale, 
+                centerImg.height * centerScale
+            );
+        };
+
+        loadImages([
+            'https://github.com/IamDivan/Umineko-Waiting-Room/raw/main/clock/clock.png',
+            'https://github.com/IamDivan/Umineko-Waiting-Room/raw/main/clock/clock_h.png',
+            'https://github.com/IamDivan/Umineko-Waiting-Room/raw/main/clock/clock_m.png',
+            'https://github.com/IamDivan/Umineko-Waiting-Room/raw/main/clock/clock_c.png'
+        ]).then(images => {
+            setInterval(() => {
+                drawClock(images[0], images[1], images[2], images[3]);
+            }, 1000);
+        });
+
+        // Existing JavaScript Code Below
+        let isRainSoundPlaying = false;
+        let butterflyColor = "#FFD700"; // Default color
+        let rainbowButterflies = false; // Toggle for rainbow butterflies
+        var butterflies = [];
+
+        document.getElementById('playButton').addEventListener('click', function() {
+            const rainSound = document.getElementById('rainSound');
+            const rainSoundCopy = document.getElementById('rainSoundCopy');
+
+            if (!isRainSoundPlaying) {
+                rainSound.volume = 0.05; // Set volume to 5%
+                rainSoundCopy.volume = 0.05; // Set volume for the copy
+                rainSound.play();
+                rainSoundCopy.currentTime = 5; // Start copy 2 seconds in
+                rainSoundCopy.play();
+                this.classList.remove('off'); // Change button style to "on"
+                this.style.backgroundColor = 'gold'; // Gold when on
+                this.textContent = 'Turn Off Rain Sounds'; // Change button text
+            } else {
+                rainSound.pause(); // Pause the sound
+                rainSound.currentTime = 0; // Reset to the start
+                rainSoundCopy.pause(); // Pause the copy
+                rainSoundCopy.currentTime = 0; // Reset to the start
+                this.classList.add('off'); // Change button style to "off"
+                this.style.backgroundColor = 'grey'; // Grey when off
+                this.textContent = 'Turn On Rain Sounds'; // Change button text
+            }
+
+            isRainSoundPlaying = !isRainSoundPlaying;
+		});
+
+        document.getElementById('copyButton').addEventListener('click', function() {
+            const countdownText = document.getElementById('countdown').textContent;
+            const percentageText = document.getElementById('percentage').textContent;
+            const combinedText = `${countdownText} - ${percentageText}`;
+
+            navigator.clipboard.writeText(combinedText).then(() => {
+                alert('Copied to clipboard: ' + combinedText);
+            }).catch(err => {
+                console.error('Could not copy text: ', err);
+            });
+        });
+
+        function createRain() {
+            const rainContainer = document.getElementById('rain');
+            for (let i = 0; i < 100; i++) {
+                const drop = document.createElement('div');
+                drop.className = 'drop';
+                drop.style.left = Math.random() * 100 + 'vw';
+                drop.style.animationDuration = Math.random() * 0.5 + 0.5 + 's'; // Random duration between 0.5s and 1s
+                drop.style.opacity = Math.random(); // Random opacity
+                rainContainer.appendChild(drop);
+            }
+        }
+
+        createRain();
+
+        function initButterflies() {
+            spawnButterfly();
+        }
+		
+		let MAX_BUTTERFLIES = 350; 
+
+        document.getElementById('maxButterfliesSlider').addEventListener('input', function() {
+            // Update the displayed value and input field
+			MAX_BUTTERFLIES = parseInt(this.value, 10); // Use the input value for spawning checks
+            document.getElementById('maxButterfliesValue').textContent = this.value; // Update the input
+            document.getElementById('maxButterfliesInput').value = this.value; // Update input field
+        });
+
+        document.getElementById('maxButterfliesInput').addEventListener('input', function() {
+            MAX_BUTTERFLIES = parseInt(this.value, 10); // Use the input value for spawning checks
+            document.getElementById('maxButterfliesSlider').value = this.value; // Update slider
+            document.getElementById('maxButterfliesValue').textContent = this.value; // Update displayed value
+        });
+		document.addEventListener('mousemove', function(event) {
+		
+			if (butterflies.length >= parseInt(MAX_BUTTERFLIES, 10)) {
+				removeButterflies(butterflies.length - parseInt(MAX_BUTTERFLIES, 10));
+				return; 
+			}
+		});
+
+		document.addEventListener('mousedown', function(event) {
+			if (butterflies.length >= parseInt(MAX_BUTTERFLIES, 10)) {
+				removeButterflies(butterflies.length - parseInt(MAX_BUTTERFLIES, 10));
+				return; 
+			}
+		});
+
+		function removeButterflies(count) {
+			for (let i = 0; i < count; i++) {
+				const butterfly = butterflies.shift(); 
+				if (butterfly) {
+					butterfly.domElement.remove(); 
+				}
+			}
+		}
+		
+        function spawnButterfly() {
+			var b = new Butterfly(rainbowButterflies ? getRandomColor() : butterflyColor); // Pass the color
+			b.init();
+			butterflies.push(b);
+		}
+
+        function Butterfly(color) {
+            this.color = color; // Store the color
+            this.init = function() {
+                this.x = Math.random() * window.innerWidth;
+                this.y = Math.random() * window.innerHeight;
+
+                this.domElement = document.createElement('div');
+                this.domElement.className = 'butterfly';
+                this.domElement.innerHTML = `
+                    <div class="left-wing">
+                        <div class="top" style="background: ${this.color};"></div>
+                        <div class="bottom" style="background: ${this.color};"></div>
+                    </div>
+                    <div class="right-wing">
+                        <div class="top" style="background: ${this.color};"></div>
+                        <div class="bottom" style="background: ${this.color};"></div>
+                    </div>
+                `;
+                document.body.appendChild(this.domElement);
+            }
+
+            this.moveButterfly = function() {
+                const padding = 20;
+                const boundaryX = window.innerWidth - 110 - padding;
+
+                this.domElement.style.transform = 'translate3D(' + this.x + 'px, ' + this.y + 'px, 0px) rotate3d(1, 0.5, 0, 110deg)';
+                
+                var randomnumberX = Math.random();
+                var randomnumberY = Math.random();
+                
+                if (randomnumberX > 0.8) this.directionX = !this.directionX;
+                if (randomnumberY > 0.8) this.directionY = !this.directionY;
+
+                this.x += this.directionX ? 1 : -1;
+                this.y += this.directionY ? 1 : -1;
+
+                if (this.x < padding) this.x = padding; // Keep within left padding
+                if (this.x > boundaryX) this.x = boundaryX; // Keep within right boundary
+                if (this.y < padding) this.y = padding; // Keep within top padding
+            }
+        }
+
+        function animate() {
+            butterflies.forEach(function(butterfly) {
+                butterfly.moveButterfly();
+            });
+            requestAnimationFrame(animate);
+        }
+
+        initButterflies();
+        animate();
+
+        let isMousePressed = false;
+
+		document.addEventListener('mousedown', function(event) {
+			// Check if the clicked target is a UI element
+			if (!event.target.closest('#clearButton, #copyButton, #colorSlider, #resetColorButton, #rainbowButton, #button, #bellButton, #maxButterfliesSlider, #maxButterfliesInput')) {
+				isMousePressed = true;
+				createButterflyAt(event.pageX, event.pageY);
+			}
+		});
+		document.getElementById('clearButton').addEventListener('click', function() {
+			// Clear all butterflies
+			butterflies.forEach(butterfly => butterfly.domElement.remove()); 
+			butterflies = []; 
+		});
+
+		document.addEventListener('mouseup', function() {
+			isMousePressed = false;
+		});
+
+		document.addEventListener('mousemove', function(event) {
+			if (isMousePressed && !event.target.closest('#clearButton, #copyButton, #colorSlider, #resetColorButton, #rainbowButton, .button, #bellButton, #maxButterfliesSlider, #maxButterfliesInput')) {
+				createButterflyAt(event.pageX, event.pageY);
+			}
+		});
+		
+		let cubeVisible = false; 
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 2500 && !cubeVisible) {
+                document.getElementById('cube').classList.add('visible'); 
+                cubeVisible = true; 
+            }
+        });
+		
+		
+		let currentYPosition = 60; // Starting vertical position in percentage
+		const displayedImages = new Set(); // Store unique image URLs
+
+		function displayImage(url, message) {
+			// Check if the image has already been displayed
+			if (displayedImages.has(url)) {
+				return; // Exit if the image has already been spawned
+			}
+
+			// Add the URL to the set of displayed images
+			displayedImages.add(url);
+
+			const imgContainer = document.createElement('div');
+			imgContainer.className = 'image-container';
+			
+			const img = document.createElement('img');
+			img.src = url;
+			imgContainer.appendChild(img);
+			
+			// Set the position of the image container
+			imgContainer.style.top = currentYPosition + 'px'; // Use currentYPosition
+
+			// Append the new image container to the body
+			document.body.appendChild(imgContainer);
+			
+			// Update the Y position for the next image
+			currentYPosition += 100; 
+
+			// Display the associated message
+			const messageElement = document.createElement('div');
+			messageElement.innerText = message;
+			messageElement.style.position = 'fixed';
+			messageElement.style.right = '10px';
+			messageElement.style.top = (currentYPosition) + 'px'; // Position it below the image
+			messageElement.style.color = 'gold'; // Change color as needed
+			messageElement.style.fontSize = '24px'; // Set a larger font size
+			document.body.appendChild(messageElement);
+
+			setTimeout(() => {
+				messageElement.remove();
+			}, 10000);
+		}
+
+		// Example usage
+		document.addEventListener('click', function() {
+			const maxButterfliesValue = document.getElementById('maxButterfliesInput').value;
+
+			if (maxButterfliesValue === '11037') {
+				displayImage("https://raw.githubusercontent.com/IamDivan/Umineko-Waiting-Room/main/Logos/JphPickle.png", "Wuggy please don't sue me");
+			} else if (maxButterfliesValue === '10155') {
+				displayImage("https://raw.githubusercontent.com/IamDivan/Umineko-Waiting-Room/main/Logos/JphJoms.png", "Top Loli please don't sue me");
+			} else if (maxButterfliesValue === '999') {
+				displayImage("https://raw.githubusercontent.com/IamDivan/Umineko-Waiting-Room/main/Logos/NotJphMorb.png", "Vixit please don't sue me");
+			} else if (maxButterfliesValue === '64358223579673204') {
+				displayImage("https://raw.githubusercontent.com/IamDivan/Umineko-Waiting-Room/main/Logos/Mousetrice.png", "Jelly plese don't sue me");
+			}else if (maxButterfliesValue[0] === '-') {
+				displayImage("https://raw.githubusercontent.com/IamDivan/Umineko-Waiting-Room/main/Logos/JphFlip.gif", "Marik please don't sue me");
+			}
+		});
+        function createButterflyAt(x, y) {
+			const butterfly = new Butterfly(rainbowButterflies ? getRandomColor() : butterflyColor); // Use the current color
+			butterfly.init();
+			butterfly.x = x - 30; // Adjust x position
+			butterfly.y = y - 30; // Adjust y position
+			butterfly.moveButterfly();
+			butterflies.push(butterfly);
+		}
+
+        Butterfly.prototype.moveButterfly = function() {
+            const padding = 20;
+            const boundaryX = window.innerWidth - 110 - padding;
+            this.domElement.style.transform = 'translate3D(' + this.x + 'px, ' + this.y + 'px, 0px) rotate3d(1, 0.5, 0, 110deg)';
+            
+            this.x += (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 2);
+            this.y += (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 2);
+
+            // Keep within boundaries
+            if (this.x < padding) this.x = padding;
+            if (this.x > boundaryX) this.x = boundaryX;
+            if (this.y < padding) this.y = padding;
+            if (this.y > window.innerHeight - padding) this.y = window.innerHeight - padding;
+        }
+
+        const streamFileUrl = 'https://raw.githubusercontent.com/IamDivan/uwr/main/Timetable.txt';
+
+        async function fetchStreamSchedule() {
+            const response = await fetch(streamFileUrl);
+            const text = await response.text();
+            return text.split('\n').reduce((acc, line) => {
+                const [date, category] = line.split(', ').map(item => item.trim());
+                if (date && category) {
+                    acc[date] = category;
+                }
+                return acc;
+            }, {});
+        }
+
+        function createCalendarDates(startDate, numDays) {
+            const dates = [];
+            for (let i = 0; i < numDays; i++) {
+                const date = moment(startDate).add(i, 'days');
+                dates.push({ date: date.format('DD.MM.YYYY'), weekday: date.format('dddd') });
+            }
+            return dates;
+        }	
+		let categoryLinks = [];
+		// Function to load category links from the external file
+		async function loadCategoryLinks() {
+			const url = 'https://raw.githubusercontent.com/IamDivan/uwr/main/Stream%20Categories.txt';
+
+			try {
+				const response = await fetch(url);
+				if (!response.ok) throw new Error('Network response was not ok');
+				
+				const text = await response.text();
+				const lines = text.trim().split('\n');
+				categoryLinks = lines.map(line => JSON.parse(line));
+
+				console.log(categoryLinks); // Log to see the fetched data
+				return categoryLinks; // Return the loaded links
+			} catch (error) {
+				console.error('Error loading category links:', error);
+				return []; // Return an empty array on error
+			}
+		}
+
+		// Call the function to load the category links
+		loadCategoryLinks();
+		
+        function renderTimetable(schedule) {
+			const timetable = document.getElementById('timetable');
+			const today = moment.utc();
+
+			let nextNextSunday = today.clone();
+			nextNextSunday.day(nextNextSunday.day() === 0 ? 14 : 14);
+
+			const startDate = nextNextSunday.clone().subtract(20, 'days');
+			const weekDates = createCalendarDates(startDate, 21);
+
+			weekDates.forEach(({ date, weekday }) => {
+				const category = schedule[date] || 'No streams';
+				let color;
+
+				const categoryLink = categoryLinks.find(item => item[0] === category);
+				if (categoryLink) {
+					color = categoryLink[3];
+				} else {
+					color = getRandomColor();
+				}
+
+				const link = categoryLink ? categoryLink[1] : "https://www.twitch.tv/andersonjph";
+				const tooltipText = categoryLink ? categoryLink[2] : "No Upcoming Streams";
+
+				const eventDate = moment.utc(date, 'DD.MM.YYYY').set({ hour: 17 });
+				const isToday = eventDate.isSame(today, 'day');
+				const isPast17 = eventDate.isBefore(today) || (isToday && today.hour() >= 17);
+
+				const dayDiv = document.createElement('div');
+				dayDiv.className = 'day' + (isPast17 ? ' past-day' : '');
+
+				const textColor = isPast17 ? '#888888' : 'black';
+				const textShadow = isPast17 ? 'none' : '1px 1px 2px rgba(255, 255, 255, 0.8)';
+
+				const backgroundColor = isToday ? color : (isPast17 ? 'black' : color);
+
+				dayDiv.innerHTML = `
+					<div class="day-header" style="background-color: ${backgroundColor}; color: ${isToday ? 'black' : textColor}; text-shadow: ${isToday ? '1px 1px 2px rgba(255, 255, 255, 0.8)' : textShadow};">${weekday} <span class="date">${date}</span></div>
+					<div class="category" style="color: ${isToday ? 'black' : (isPast17 ? '#888888' : textColor)}; text-shadow: ${isToday ? '1px 1px 2px rgba(255, 255, 255, 0.8)' : textShadow};">${category}</div>
+					${category !== 'No streams' ? '<div class="category" style="color: ' + (isToday ? 'black' : textColor) + '; text-shadow: ' + textShadow + ';">At 17:00 UTC</div>' : ''}
+					<div class="tooltip" style="display:none; position:absolute;">
+						<a href="${link}" target="_blank" style="color: white;">${tooltipText}</a>
+					</div>
+				`;
+
+				dayDiv.style.backgroundColor = backgroundColor; 
+
+				if (isToday) {
+					dayDiv.style.border = '6px solid white'; 
+				}
+
+				dayDiv.addEventListener('mouseenter', function() {
+					const tooltip = dayDiv.querySelector('.tooltip');
+					tooltip.style.display = 'block';
+				});
+				dayDiv.addEventListener('mouseleave', function() {
+					const tooltip = dayDiv.querySelector('.tooltip');
+					tooltip.style.display = 'none';
+				});
+
+				timetable.appendChild(dayDiv);
+			});
+		}
+        function startCountdown(schedule) {
+            const now = moment.utc(); 
+            let targetDate = null;
+            let lastEventDate = null;
+
+            for (const [date, category] of Object.entries(schedule)) {
+                const eventDate = moment.utc(date, 'DD.MM.YYYY').set({ hour: 17, minute: 0, second: 0 });
+
+                if (eventDate.isAfter(now) && category.includes("Umineko")) {
+                    targetDate = eventDate;
+                    break;
+                }
+
+                if (eventDate.isBefore(now) && category.includes("Umineko")) {
+                    lastEventDate = eventDate;
+                }
+            }
+
+            if (!targetDate) {
+                document.getElementById('countdown').innerHTML = "No upcoming 'Umineko' events found.";
+                return;
+            }
+
+            const countdownElement = document.getElementById('countdown');
+            const loadingCircle = document.getElementById('progress-circle');
+            const percentageElement = document.getElementById('percentage');
+            const totalDuration = targetDate.diff(lastEventDate);
+
+            const updateCountdown = () => {
+				const remainingTime = targetDate.diff(moment.utc());
+
+				if (remainingTime < 0) {
+					countdownElement.innerHTML = "Umineko has started!";
+					if (isBellOn) {
+						bellAudio.play(); // Play the sound if the bell is on
+					}
+					clearInterval(interval);
+					return;
+				}
+				
+                const duration = moment.duration(remainingTime);
+                countdownElement.innerHTML = `${duration.days()}d ${duration.hours()}h ${duration.minutes()}m ${duration.seconds()}s`;
+
+                const elapsedTime = moment.utc().diff(lastEventDate);
+                const percentage = Math.min((elapsedTime / totalDuration) * 100, 100);
+                const offset = 1413 - (percentage / 100) * 1413;
+                loadingCircle.style.strokeDashoffset = offset;
+                percentageElement.innerHTML = `${percentage.toFixed(5)}%`;
+
+                // Calculate days since last event and update the text
+                const daysSinceLastEvent = moment.utc().diff(lastEventDate, 'days');
+                const dayText = daysSinceLastEvent === 0 ? "The First Day" :
+                                daysSinceLastEvent === 1 ? "The Second Day" :
+                                daysSinceLastEvent === 2 ? "The Third Day" :
+                                daysSinceLastEvent === 3 ? "The Fourth Day" :
+                                `${daysSinceLastEvent + 1} day`;
+
+                document.getElementById('days-since-last-event').innerHTML = dayText;
+
+                if (percentage > 0 && butterflies.length === 0) {
+                    initButterflies();
+                }
+            };
+
+            updateCountdown();
+            const interval = setInterval(updateCountdown, 1000);
+        }
+
+        function updateLastEvent(schedule) {
+            const now = moment.utc(); 
+            let lastEventDate = null;
+
+            for (const [date, category] of Object.entries(schedule)) {
+                const eventDate = moment.utc(date, 'DD.MM.YYYY').set({ hour: 17, minute: 0, second: 0 });
+
+                if (eventDate.isBefore(now) && category.includes("Umineko")) {
+                    lastEventDate = eventDate;
+                }
+            }
+
+            const lastEventElement = document.getElementById('last-event');
+
+            if (lastEventDate) {
+                const updateLastEventTime = () => {
+                    const timeSinceLastEvent = moment.utc().diff(lastEventDate);
+                    const duration = moment.duration(timeSinceLastEvent);
+                    lastEventElement.innerHTML = `Time since last 'Umineko' event: ${duration.days()}d ${duration.hours()}h ${duration.minutes()}m ${duration.seconds()}s`;
+                };
+
+                updateLastEventTime();
+                const interval = setInterval(updateLastEventTime, 1000);
+            } else {
+                lastEventElement.innerHTML = "No past 'Umineko' events found.";
+            }
+        }
+
+        function displayCurrentDate() {
+            const today = moment.utc();
+            const formattedDate = today.format('MMMM Do, YYYY'); // English format
+            const formattedDateJP = today.locale('ja').format('YYYY年M月D日'); // Japanese format
+
+            document.getElementById('current-date').innerHTML = formattedDate;
+            document.getElementById('current-date-jp').innerHTML = formattedDateJP;
+        }
+
+        function displayCurrentUTCTime() {
+            const now = moment.utc();
+            const formattedUTC = now.format('HH:mm:ss [UTC]');
+            document.getElementById('current-utc-time').innerHTML = `Current Time: ${formattedUTC}`;
+        }
+
+        function initUTCUpdater() {
+            displayCurrentUTCTime(); // Initial call to display the time
+            setInterval(displayCurrentUTCTime, 1000); // Update every second
+        }
+		
+		// Add the audio element for the bell sound
+		const bellAudio = new Audio('https://github.com/IamDivan/Umineko-Waiting-Room/raw/main/clock/umilse_1053.ogg');
+		let isBellOn = false;
+
+		// Event listener for the bell button
+		document.getElementById('bellButton').addEventListener('click', function() {
+			isBellOn = !isBellOn;
+			this.textContent = isBellOn ? "Turn Off the Bell" : "Turn On the Bell"; // Toggle button text
+		});
+
+        async function init() {
+			try {
+				await loadCategoryLinks(); // Wait for category links to load
+				const schedule = await fetchStreamSchedule();
+				renderTimetable(schedule);
+				startCountdown(schedule);
+				updateLastEvent(schedule);
+				displayCurrentDate();
+				initUTCUpdater(); // Initialize the UTC time updater
+			} catch (error) {
+				console.error('Error fetching stream schedule:', error);
+				const timetable = document.getElementById('timetable');
+				timetable.innerHTML = '<div class="day">Failed to load schedule</div>';
+			}
+		}
+
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        // Update butterflies color when the slider changes
+        document.getElementById('colorSlider').addEventListener('input', function() {
+            butterflyColor = this.value; // Update current color
+        });
+
+        // Reset color to gold when the button is clicked
+        document.getElementById('resetColorButton').addEventListener('click', function() {
+            butterflyColor = "#FFD700"; // Reset to gold
+            document.getElementById('colorSlider').value = butterflyColor; // Update slider
+        });
+
+        // Toggle rainbow butterflies
+        document.getElementById('rainbowButton').addEventListener('click', function() {
+            rainbowButterflies = !rainbowButterflies; // Toggle rainbow effect
+            this.textContent = rainbowButterflies ? "Turn Off Rainbow Butterflies" : "Turn On Rainbow Butterflies"; // Update button text
+        });
+
+        init();
+        initButterflies();
+    </script>
+</body>
+</html>
